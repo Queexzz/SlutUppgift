@@ -2,163 +2,153 @@ import tkinter as tk
 from tkinter import ttk, font
 import time
 
-class UniqueElevator:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Cyber Lift Simulator")
-        self.root.geometry("350x550")
-        self.root.configure(bg='#0a0a12')
-        
-        # Elevator state
+
+#author = Richard Whyte
+#version = 1.5.0
+#email = Richard.whyte@elev.ga.ntig.se
+
+class Lift:
+    def __init__(self, window):
+        self.window = window
+        self.window.title("Neon Lift Game")
+        self.window.geometry("350x550")
+        self.window.configure(bg='#120a0a')
+
+        # Lift status
         self.current_floor = 1
-        self.total_floors = 8  # More floors than before but still manageable
-        self.is_moving = False
-        self.direction = "■"  # Can be ▲ or ▼
-        
-        # Custom colors
-        self.bg_color = '#0a0a12'
-        self.btn_color = '#3a3b4a'
-        self.active_color = '#6d72e8'
-        self.text_color = '#e0e0ff'
-        
-        # Create custom font
-        self.custom_font = font.Font(family='Courier', size=12, weight='bold')
-        
-        # Create GUI
-        self.create_widgets()
-        
-    def create_widgets(self):
-        # Main container
-        main_frame = tk.Frame(self.root, bg=self.bg_color)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
-        
-        # Elevator display (top panel)
-        display_frame = tk.Frame(main_frame, bg='#1a1a24', bd=2, relief=tk.RAISED)
-        display_frame.pack(fill=tk.X, pady=(0, 20))
-        
-        self.floor_display = tk.Label(display_frame, 
-                                    text="◼ 1 ◼", 
-                                    font=('Courier', 24, 'bold'),
-                                    fg=self.active_color,
-                                    bg='#1a1a24',
-                                    padx=20)
-        self.floor_display.pack(pady=10)
-        
-        # Direction indicator
-        self.direction_indicator = tk.Label(display_frame, 
-                                          text="■", 
-                                          font=('Courier', 18),
-                                          fg=self.text_color,
-                                          bg='#1a1a24')
-        self.direction_indicator.pack(pady=(0, 10))
-        
-        # Elevator buttons (grid layout)
-        btn_frame = tk.Frame(main_frame, bg=self.bg_color)
-        btn_frame.pack()
-        
-        # Create floor buttons in a grid
-        floors = list(range(self.total_floors, 0, -1))
-        for i, floor in enumerate(floors):
-            btn = tk.Button(btn_frame, 
-                          text=str(floor),
-                          command=lambda f=floor: self.call_elevator(f),
-                          bg=self.btn_color,
-                          fg=self.text_color,
-                          activebackground=self.active_color,
-                          activeforeground='white',
-                          font=self.custom_font,
-                          width=4,
-                          height=2,
-                          relief=tk.RAISED,
-                          bd=3)
-            btn.grid(row=i//3, column=i%3, padx=5, pady=5)
-            setattr(self, f'btn_{floor}', btn)
-        
-        # Emergency button
-        emergency_btn = tk.Button(btn_frame,
-                                text="⏻",
-                                command=self.emergency_stop,
-                                bg='#e84a4a',
-                                fg='white',
-                                font=('Arial', 14),
-                                width=4,
-                                height=2,
-                                relief=tk.RAISED,
-                                bd=3)
-        emergency_btn.grid(row=(self.total_floors//3)+1, column=1, pady=(10, 0))
-        
-        # Status display
-        status_frame = tk.Frame(main_frame, bg='#1a1a24')
-        status_frame.pack(fill=tk.X, pady=(20, 0))
-        
-        self.status = tk.Text(status_frame, 
-                            height=6, 
-                            width=30,
-                            bg='#1a1a24',
-                            fg=self.text_color,
-                            font=('Courier', 10),
-                            relief=tk.FLAT,
-                            bd=0)
-        self.status.pack(padx=5, pady=5)
-        self.status.insert(tk.END, "System ready\n")
-        self.status.config(state=tk.DISABLED)
-        
-    def call_elevator(self, target_floor):
-        if self.is_moving:
-            self.update_status("Elevator already in motion!")
+        self.total_floors = 8
+        self.lift_moving = False
+        self.default_arrow_symbol = "■"
+
+        # Colours
+        self.bg_colour = '#120a0a'
+        self.button_colour = '#4a3b3a'
+        self.button_active_colour = '#e8726d'
+        self.text_colour = '#ffe0e0'
+
+        # Fonts
+        self.button_font = font.Font(family='Impact', size=12)
+
+        #UI
+        self.create_ui()
+
+    def create_ui(self):
+        # Main frame
+        main_frame = tk.Frame(self.window, bg=self.bg_colour)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
+
+        # Floor display attop
+        display_frame = tk.Frame(main_frame, bg='#241a1a', bd=2, relief=tk.SUNKEN)
+        display_frame.pack(fill=tk.X, pady=(0, 15))
+
+        self.floor_label = tk.Label(display_frame,
+                                    text="▣ 1 ▣",
+                                    font=('Impact', 24),
+                                    fg=self.button_active_colour,
+                                    bg='#241a1a',
+                                    padx=15)
+        self.floor_label.pack(pady=8)
+
+        self.direction_indicator = tk.Label(display_frame,
+                                            text=self.default_arrow_symbol,
+                                            font=('Impact', 16),
+                                            fg=self.text_colour,
+                                            bg='#241a1a')
+        self.direction_indicator.pack(pady=(0, 8))
+
+        # Buttons
+        button_frame = tk.Frame(main_frame, bg=self.bg_colour)
+        button_frame.pack()
+
+        # Floor buttons
+        for i, floor in enumerate(range(self.total_floors, 0, -1)):
+            floor_button = tk.Button(button_frame,
+                                     text=str(floor),
+                                     command=lambda f=floor: self.move_to_floor(f),
+                                     bg=self.button_colour,
+                                     fg=self.text_colour,
+                                     activebackground=self.button_active_colour,
+                                     activeforeground='black',
+                                     font=self.button_font,
+                                     width=3,
+                                     height=1,
+                                     relief=tk.GROOVE,
+                                     bd=2)
+            floor_button.grid(row=i // 3, column=i % 3, padx=4, pady=4)
+            setattr(self, f'floor_button_{floor}', floor_button)
+
+        # Message log
+        log_frame = tk.Frame(main_frame, bg='#241a1a')
+        log_frame.pack(fill=tk.X, pady=(15, 0))
+
+        self.message_log = tk.Text(log_frame,
+                                   height=5,
+                                   width=25,
+                                   bg='#241a1a',
+                                   fg=self.text_colour,
+                                   font=('Arial', 9),
+                                   relief=tk.SUNKEN,
+                                   bd=1)
+        self.message_log.pack(padx=3, pady=3)
+        self.message_log.insert(tk.END, "Ready to go up!\n")
+        self.message_log.config(state=tk.DISABLED)
+
+    def move_to_floor(self, destination_floor):
+        if self.lift_moving:
+            self.log_message("Lift is currently moving. Please wait.")
             return
-            
-        if target_floor == self.current_floor:
-            self.update_status(f"Already on floor {target_floor}")
+
+        if destination_floor == self.current_floor:
+            self.log_message("You are already on this floor.")
             return
-            
-        self.is_moving = True
-        self.update_status(f"Moving to floor {target_floor}")
-        
-        # Set direction indicator
-        if target_floor > self.current_floor:
-            self.direction_indicator.config(text="▲", fg='#4ae84a')  # Green up arrow
+
+        self.lift_moving = True
+        self.log_message(f"Moving to floor {destination_floor}...")
+
+        # Show direction
+        if destination_floor > self.current_floor:
+            self.direction_indicator.config(text="↑", fg='#e8e84a')
         else:
-            self.direction_indicator.config(text="▼", fg='#e84a4a')  # Red down arrow
-        
-        # Get button to highlight during movement
-        btn = getattr(self, f'btn_{target_floor}')
-        btn.config(bg=self.active_color)
-        
-        # Simple animation
-        direction = 1 if target_floor > self.current_floor else -1
-        for floor in range(self.current_floor, target_floor, direction):
-            time.sleep(0.3)
-            self.current_floor = floor + direction
-            self.floor_display.config(text=f"◼ {self.current_floor} ◼")
-            self.root.update()
-        
-        # Reset after arrival
-        self.direction_indicator.config(text="■", fg=self.text_color)  # Neutral
-        btn.config(bg=self.btn_color)
-        self.update_status(f"Arrived at floor {target_floor}")
-        self.is_moving = False
-        
-    def emergency_stop(self):
-        if self.is_moving:
-            self.is_moving = False
-            self.update_status("EMERGENCY STOP ACTIVATED!")
-            self.direction_indicator.config(text="⏹", fg='#e84a4a')
+            self.direction_indicator.config(text="↓", fg='#e84a4a')
+
+        # Highlight destination button
+        destination_button = getattr(self, f'floor_button_{destination_floor}')
+        destination_button.config(bg=self.button_active_colour)
+
+        # Simulate floor movement
+        step = 1 if destination_floor > self.current_floor else -1
+        for _ in range(self.current_floor, destination_floor, step):
+            time.sleep(0.2)
+            self.current_floor += step
+            self.floor_label.config(text=f"▣ {self.current_floor} ▣")
+            self.window.update()
+
+        # Reset indicators
+        self.direction_indicator.config(text=self.default_arrow_symbol, fg=self.text_colour)
+        destination_button.config(bg=self.button_colour)
+        self.log_message(f"Arrived at floor {destination_floor}.")
+        self.lift_moving = False
+
+    def trigger_emergency_stop(self):
+        if self.lift_moving:
+            self.lift_moving = False
+            self.log_message("Emergency stop activated!")
+            self.direction_indicator.config(text="✖", fg='#e84a4a')
         else:
-            self.update_status("System is already idle")
-        
-    def update_status(self, message):
-        self.status.config(state=tk.NORMAL)
-        self.status.insert(tk.END, "> " + message + "\n")
-        self.status.see(tk.END)
-        self.status.config(state=tk.DISABLED)
-        
-    def clear_messages(self):
-        self.status.config(state=tk.NORMAL)
-        self.status.delete(1.0, tk.END)
-        self.status.config(state=tk.DISABLED)
+            self.log_message("Lift is not moving.")
+
+    def log_message(self, message):
+        self.message_log.config(state=tk.NORMAL)
+        self.message_log.insert(tk.END, "• " + message + "\n")
+        self.message_log.see(tk.END)
+        self.message_log.config(state=tk.DISABLED)
+
+    def clear_log(self):
+        self.message_log.config(state=tk.NORMAL)
+        self.message_log.delete(1.0, tk.END)
+        self.message_log.config(state=tk.DISABLED)
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = UniqueElevator(root)
+    app = Lift(root)
     root.mainloop()
