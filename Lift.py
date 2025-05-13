@@ -10,7 +10,7 @@ import time
 class Lift:
     def __init__(self, window):
         self.window = window
-        self.window.title("Neon Lift Game")
+        self.window.title("Lift")
         self.window.geometry("350x550")
         self.window.configure(bg='#120a0a')
 
