@@ -1,3 +1,14 @@
+__author__  = "Richard Whyte"
+__version__ = "1.7.0"
+__email__   = "richard.whyte@elev.ga.ntig.se"
+
+
+
+
+
+
+
+
 import tkinter as tk
 from tkinter import font
 import time
@@ -6,7 +17,7 @@ class Lift:
     def __init__(self, window):
         self.window = window
         self.window.title("Lift")
-        self.window.geometry("1000x700")  # Moderate size window for cleaner UI
+        self.window.geometry("1920x1080")  #UI
         self.window.configure(bg='#120a0a')  # Background colour of the window
 
         # Lift status
@@ -27,6 +38,7 @@ class Lift:
         # Fonts
         self.button_font = font.Font(family='Impact', size=12)  # Font for buttons
         self.floor_font = font.Font(family='Impact', size=28, weight='bold')
+        self.large_floor_font = font.Font(family='Impact', size=48, weight='bold')
 
         # UI
         self.create_ui()  # Create the user interface
@@ -35,7 +47,7 @@ class Lift:
         main_frame = tk.Frame(self.window, bg=self.bg_colour)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
-        # Left side for controls
+        #controls
         control_frame = tk.Frame(main_frame, bg=self.bg_colour)
         control_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='n')
 
@@ -90,19 +102,23 @@ class Lift:
                                 bd=3)
         exit_button.pack(pady=(30, 0))
 
-        # Right side for graphical lift
-        graphical_frame = tk.Frame(main_frame, bg=self.bg_colour)
-        graphical_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(40,0))
+        # graphical lift and floor display
+        right_container = tk.Frame(main_frame, bg=self.bg_colour)
+        right_container.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(40, 0))
+
+        # Separate graphical lift frame inside right_container
+        graphical_frame = tk.Frame(right_container, bg=self.bg_colour)
+        graphical_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Canvas for lift shaft and character
-        self.floor_height = 80  # Height of each floor
+        self.floor_height = 100  
         canvas_height = self.total_floors * self.floor_height + 40
-        canvas_width = 220
+        canvas_width = 300  
         self.character_canvas = tk.Canvas(graphical_frame, width=canvas_width,
                                           height=canvas_height,
                                           bg='#241a1a',
                                           bd=3, relief=tk.SUNKEN)
-        self.character_canvas.pack(expand=True)
+        self.character_canvas.pack(expand=True, fill=tk.BOTH)
 
         # Draw floors lines & numbers
         for floor in range(1, self.total_floors + 1):
@@ -114,8 +130,8 @@ class Lift:
                                              font=('Arial', 14), anchor='w')
 
         # Lift cage dimensions
-        self.lift_left_x = 60
-        self.lift_right_x = canvas_width - 60
+        self.lift_left_x = 80 
+        self.lift_right_x = canvas_width - 80
         self.lift_height = int(self.floor_height * 0.85)
         self.lift_border_colour = '#d1a6a3'
 
@@ -127,12 +143,12 @@ class Lift:
             fill=self.lift_colour, outline=self.lift_border_colour, width=4
         )
 
-        # Draw character setup (smaller character)
+        # Draw character setup 
         self.draw_character(initial_y_top, initial_y_bottom)
 
         # Message log below graphical frame
         log_frame = tk.Frame(graphical_frame, bg='#241a1a')
-        log_frame.pack(fill=tk.X, pady=(20,0))
+        log_frame.pack(fill=tk.X, pady=(20, 0))
 
         self.message_log = tk.Text(log_frame, height=6, width=40,
                                    bg='#241a1a', fg=self.text_colour,
@@ -141,6 +157,20 @@ class Lift:
         self.message_log.insert(tk.END, "Ready to go up!\n")
         self.message_log.config(state=tk.DISABLED)
 
+        #floor status
+        floor_status_frame = tk.Frame(right_container, bg='#241a1a', width=300)
+        floor_status_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=(20, 0), pady=20)
+
+        self.floor_status_label = tk.Label(floor_status_frame,
+                                           text=f"On Floor {self.current_floor}",
+                                           font=self.large_floor_font,
+                                           fg='#FFFFFF',
+                                           bg='#241a1a',
+                                           relief=tk.RIDGE,
+                                           bd=5,
+                                           width=18,
+                                           height=3)
+        self.floor_status_label.pack(expand=True, fill=tk.BOTH)
 
     def draw_character(self, y_top, y_bottom):
         if hasattr(self, "character_parts"):
@@ -150,9 +180,9 @@ class Lift:
         self.character_parts = []
 
         center_x = (self.lift_left_x + self.lift_right_x) / 2
-        center_y = (y_top + y_bottom) / 2 + 5  # slight downward offset for no clipping
+        center_y = (y_top + y_bottom) / 2 + 5  
 
-        # Smaller head
+        #head
         head_radius = 10
         head = self.character_canvas.create_oval(center_x - head_radius,
                                                  center_y - 30 - head_radius,
@@ -200,7 +230,8 @@ class Lift:
         self.log_message(f"Moving to floor {destination_floor}...")
 
         # Show direction
-        if destination_floor > self.current_floor:
+        going_up = destination_floor > self.current_floor
+        if going_up:
             self.direction_indicator.config(text="↑", fg='#e8e84a')
         else:
             self.direction_indicator.config(text="↓", fg='#e84a4a')
@@ -209,11 +240,13 @@ class Lift:
         destination_button = getattr(self, f'floor_button_{destination_floor}')
         destination_button.config(bg=self.button_active_colour)
 
-        step = 1 if destination_floor > self.current_floor else -1
+        step = 1 if going_up else -1
         for _ in range(self.current_floor, destination_floor, step):
             time.sleep(0.18)
             self.current_floor += step
             self.floor_label.config(text=f"▣ {self.current_floor} ▣")
+            direction_text = "Going up to" if going_up else "Going down to"
+            self.floor_status_label.config(text=f"{direction_text} Floor {self.current_floor}")
             self.window.update()
 
             self.update_lift_and_character_position()
@@ -221,6 +254,7 @@ class Lift:
         # Reset
         self.direction_indicator.config(text=self.default_arrow_symbol, fg=self.text_colour)
         destination_button.config(bg=self.button_colour)
+        self.floor_status_label.config(text=f"Arrived at Floor {destination_floor}")
         self.log_message(f"Arrived at floor {destination_floor}.")
         self.lift_moving = False
 
